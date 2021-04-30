@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math
 
 class ScaledDotProductAttention(nn.Module):
 
@@ -33,7 +34,8 @@ class MultiHeadAttention(nn.Module):
         self.linear_q = nn.Linear(in_features, in_features, bias)
         self.linear_k = nn.Linear(in_features, in_features, bias)
         self.linear_v = nn.Linear(in_features, in_features, bias)
-        self.linear_o = nn.Linear(in_features, in_features, bias)
+        #self.linear_o = nn.Linear(in_features, in_features, bias)
+        self.linear_o = nn.Linear(in_features, in_features // self.head_num, bias)
 
     def forward(self, q, k, v, mask=None):
         q, k, v = self.linear_q(q), self.linear_k(k), self.linear_v(v)
@@ -89,6 +91,7 @@ class EncoderBlock(nn.Module):
     def __init__(self, embed_size, heads):
         super(EncoderBlock, self).__init__()
         
+        self.heads = heads
         self.norm1 = nn.LayerNorm(embed_size)
         self.attention = MultiHeadAttention(embed_size * heads,
                  head_num = heads,
@@ -100,8 +103,8 @@ class EncoderBlock(nn.Module):
     def forward(self, x):
         
         out = self.norm1(x)
-
-        attention = self.MultiHeadAttention(out, out, out, mask)
+        out = out.repeat(1, 1, self.heads)
+        attention = self.attention(out, out, out, mask = None)
 
         attention = attention + x
 
@@ -132,9 +135,9 @@ class MultiLayerEncoder(nn.Module):
         # first Linear
         self.layers.append(nn.Linear(in_features = embed_size, out_features = reduced_dims[0], bias = self.use_bias))
 
-        last_dim = embed_size
+        last_dim = reduced_dims[0]
         # Encoder - Linear stack
-        for dim in reduced_dims:
+        for dim in reduced_dims[1:]:
 
             # encoders
             for _ in range(num_layers):
@@ -146,57 +149,50 @@ class MultiLayerEncoder(nn.Module):
             # used for next pipe
             last_dim = dim
 
-        
+        self.to(device)
         print(self.layers)
         pass
 
 
 
-    def forward(self, x, mask):
+    def forward(self, x):
 
         out = x
+        #for layer in self.layers:
+        #    if isinstance(layer, nn.Linear):
+        #        out = layer(out)
+        #    elif isinstance(layer, EncoderBlock):
+        #        out = layer(out)
+
         # in encoder the query, key, value are same.
         for layer in self.layers:
-            out = layer(out, out, out, mask)
+            out = layer(out)
+
+
 
         return out
 
 
 if __name__ == "__main__":
 
+    import time
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
 
     # batch size, seq_len, in_feature
-    dummy_query = torch.Tensor(64, 400, 2051)
+    dummy_query = torch.Tensor(8, 400, 2051).to(device)
 
     reduced_dims = [2048 // 2, 2048 // 4, 2048 // 8, 3]
 
+    start = time.time()
     mle = MultiLayerEncoder(embed_size = 2051, reduced_dims = reduced_dims, device = device)
+    end = time.time()
+    print("MultiLayerEncoder:construct time: {}", end - start)
 
+    start = time.time()
     out = mle(dummy_query)
-
-    # test kqv splitting
-
-    sa = SelfAttention(embed_size = 2051, heads = 4)
-
-    print(sa)
-
-    nnsa = nn.MultiheadAttention(2051 * 4, 4)
-
-    print(nnsa)
-
-    # 4 x 3
-    mat = torch.Tensor([[0, 0, 0], [1, 1, 1], [2, 2, 2], [1, 1, 1]])
-
-    #mat = torch.unsqueeze(mat, 0)
-
-    drop = 0.4
-
-    sd = nn.Dropout(p = drop)
-
-    sd_out = sd(mat * drop)
-
+    end = time.time()
+    print("MultiLayerEncoder:forward time: {}", end - start)
 
     pass
 
