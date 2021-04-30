@@ -351,3 +351,4 @@ MigrationBackup/
 
 data/
 ResNet50BP/WordEmbeddings/
+*.pth

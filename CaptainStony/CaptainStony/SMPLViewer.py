@@ -34,7 +34,7 @@ from ui.main_window import Ui_MainWindow
 
 if __name__ == '__main__':
 
-    print(os.getcwd())
+    print("working dir: {}".format(os.getcwd()))
 
     seq_name = 'courtyard_basketball_00'
     datasetDir = './data/3DPW'
