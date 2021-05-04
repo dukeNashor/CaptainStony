@@ -1,7 +1,7 @@
 import sys
 sys.path.append('./data/')
 sys.path.append('./data/smpl/smpl_webuser/')
-sys.path.append('./3rdparty/opendr/')
+sys.path.append('./CaptainStony/opendr/')
 sys.path.append('./CaptainStony/CaptainStony/ui')
 
 

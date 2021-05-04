@@ -5,15 +5,20 @@ from torchvision import models
 import logging
 
 class CNN(nn.Module):
-    def __init__(self, device = "cpu"):
+    def __init__(self, batch_size, device = "cpu"):
         super(CNN, self).__init__()
+        self.batch_size = batch_size
+        self.device = device
         resnet_model = models.resnet50(pretrained = True)
         self.resnet = torch.nn.Sequential(*(list(resnet_model.children())[:-1]))
         self.resnet.train(False)
+        self.to(self.device)
         logging.info(self.resnet)
+        self.resnet.eval()
 
     def forward(self, inputs):
         out = self.resnet(inputs)
+        out = out.reshape((self.batch_size, 1, -1))
         return out
 
 
@@ -54,7 +59,7 @@ if __name__ == "__main__":
     dataset = datasets.ImageFolder('./data/3DPW/imageFiles/', transform = transform)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size = BATCH_SIZE, shuffle = False)
     images, labels = next(iter(dataloader))
-
+    print("showing first image of size:", *images[0].shape)
     plt.imshow(images[0].permute(1, 2, 0))
     plt.show()
 

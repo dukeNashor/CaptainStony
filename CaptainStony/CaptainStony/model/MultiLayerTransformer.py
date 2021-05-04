@@ -215,5 +215,9 @@ if __name__ == "__main__":
     end = time.time()
     print("MultiLayerEncoder:forward time: {}", end - start)
 
+    func_loss = FuncLoss(device)
+
+
+
     pass
 
