@@ -34,7 +34,21 @@ from ui.main_window import Ui_MainWindow
 
 if __name__ == '__main__':
 
-    print("working dir: {}".format(os.getcwd()))
+    import logging
+
+    logging.basicConfig(
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        level=logging.INFO,
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+    logging.info("working dir: {}".format(os.getcwd()))
+
+    app = QtWidgets.QApplication(sys.argv)
+    form = Ui_MainWindow()
+    form.show()
+    form.raise_()
+    sys.exit(app.exec_())
+
 
     seq_name = 'courtyard_basketball_00'
     datasetDir = './data/3DPW'
@@ -64,8 +78,4 @@ if __name__ == '__main__':
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    app = QtWidgets.QApplication(sys.argv)
-    form = Ui_MainWindow()
-    form.show()
-    form.raise_()
-    sys.exit(app.exec_())
+    

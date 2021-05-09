@@ -12,6 +12,8 @@ from .gen.main_window import Ui_MainWindow as Ui_MainWindow_Base
 from .camera_widget import Ui_CameraWidget
 from .util import *
 
+from PoseRetriever import *
+
 model_type_list = ['smplx','smpl','flame']
 
 class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
@@ -31,7 +33,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         # self.rn = ColoredRenderer(bgcolor=np.ones(3), frustum=self.frustum, camera=self.camera, vc=self.light,
                                   # overdraw=False)
         self.rn = ColoredRenderer()
-        self.rn.set(glMode='glfw',bgcolor=np.ones(3), frustum=self.frustum, camera=self.camera, vc=self.light,
+        self.rn.set(glMode='glfw',bgcolor=np.array([151 / 255, 102 / 255, 10 / 255]), frustum=self.frustum, camera=self.camera, vc=self.light,
                                   overdraw=False)
         self.rn.overdraw = True
         self.rn.nsamples = 8
@@ -61,14 +63,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.pos_1.valueChanged[float].connect(lambda val: self._update_position(1, val))
         self.pos_2.valueChanged[float].connect(lambda val: self._update_position(2, val))
 
-        self.radio_f.pressed.connect(lambda: self._init_model('f'))
-        self.radio_m.pressed.connect(lambda: self._init_model('m'))
+        #self.radio_f.pressed.connect(lambda: self._init_model('f'))
+        #self.radio_m.pressed.connect(lambda: self._init_model('m'))
 
-        self.model_choose.currentIndexChanged[int].connect(lambda val: self._update_model(val))
+        #self.model_choose.currentIndexChanged[int].connect(lambda val: self._update_model(val))
 
         self.reset_pose.clicked.connect(self._reset_pose)
         self.reset_shape.clicked.connect(self._reset_shape)
-        self.reset_expression.clicked.connect(self._reset_expression)
+        #self.reset_expression.clicked.connect(self._reset_expression)
         self.reset_postion.clicked.connect(self._reset_position)
 
         self.canvas.wheelEvent = self._zoom
@@ -86,6 +88,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.view_bones.triggered.connect(self.draw)
 
         self._update_canvas = True
+
+        self.initialize_pose_retrieval_widgets()
+
 
     def showEvent(self, event):
         self._init_camera()
@@ -110,6 +115,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
 
             self.canvas.setScaledContents(False)
             self.canvas.setPixmap(self._to_pixmap(img))
+            self.canvas.setScaledContents(True)
+            self.canvas_query.setPixmap(self._to_pixmap(img))
+            self._update_pose_text_edit()
 
     def _draw_annotations(self, img):
         self.joints2d.set(t=self.camera.t, rt=self.camera.rt, f=self.camera.f, c=self.camera.c, k=self.camera.k)
@@ -327,7 +335,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self._init_camera(update_camera=True)
 
         self._reset_shape()
-        self._reset_expression()
+        #self._reset_expression()
         self._reset_pose()
         self._reset_position()
 
@@ -364,11 +372,17 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self._update_canvas = True
         self.draw()
 
-    def _update_pose(self, id, val):
+    @staticmethod
+    def _convert_scrollbar_value(val):
         val = (val - 50) / 50.0 * np.pi
 
         if id == 0:
             val += np.pi
+
+        return val
+
+    def _update_pose(self, id, val):
+        val = self._convert_scrollbar_value(val)
 
         if self.model_type == 'flame' and id>=5*3:
             return
@@ -386,6 +400,65 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
     def _update_position(self, id, val):
         self.model.trans[id] = val
         self.draw()
+
+    ################## Pose retrieval task ##################
+    def initialize_pose_retrieval_widgets(self):
+
+        self.canvas_query.wheelEvent = self._zoom
+        self.canvas_query.mousePressEvent = self._mouse_begin
+        self.canvas_query.mouseMoveEvent = self._move
+        self.canvas_query.mouseReleaseEvent = self._mouse_end
+
+        self.btn_query.clicked.connect(lambda _ : self._query_current_pose())
+        self.result_list.currentItemChanged.connect(lambda _: self._update_selected_view())
+
+        self.large_memory_mode = True
+        self.pose_retriever = PoseRetriever(load_image_into_memory = self.large_memory_mode)
+
+
+    def _get_pose_parameters(self):
+        return [ self._convert_scrollbar_value(wgt.value()) for idx, wgt in list(self._poses()) ]
+
+    def _update_pose_text_edit(self):
+        p = self._get_pose_parameters()
+        text_p = "\t".join([ "{:.4f}".format(d) for d in p ])
+        self.pose_text_edit.setText(text_p)
+     
+    def _query_current_pose(self):
+        print("Query start")
+        pose_param = self._get_pose_parameters()
+        query_results = self.pose_retriever.Query(pose = pose_param)
+        query_results = [{"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00009.jpg"},
+                         {"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00173.jpg"},
+                         {"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00225.jpg"}
+                         ]
+        self._update_result_list(query_results)
+        self._update_selected_view()
+
+
+    def _update_result_list(self, query_results):
+        print("Updating result list")
+        for qr in query_results:
+            li = QtWidgets.QListWidgetItem(parent = self.result_list)
+            li.setText(qr["image_path"])
+            self.result_list.addItem(li)
+        
+        # set first as selected, if at least one exists
+        if self.result_list.count() > 0:
+            self.result_list.setCurrentRow(0)
+        
+    def _update_selected_view(self):
+        print("Updating selected view")
+        if self.result_list.currentItem() is not None:
+            print("text:", self.result_list.currentItem().text())
+            image_path = self.result_list.currentItem().text()
+            self.pose_retriever.image_dict[image_path] = image_path
+            selected_image = self.pose_retriever.GetImage(image_path)
+            self.selected_view.setPixmap(self._to_pixmap(selected_image, bgr_to_rgb = False, resize = (400, 200)))
+            
+
+
+    ################## ##################
 
     def _reset_position(self):
         self._update_canvas = False
@@ -500,14 +573,17 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         ])
 
     @staticmethod
-    def _to_pixmap(im):
+    def _to_pixmap(im, bgr_to_rgb = True, resize = None):
         if im.dtype == np.float32 or im.dtype == np.float64:
             im = np.uint8(im * 255)
 
         if len(im.shape) < 3 or im.shape[-1] == 1:
             im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
-        else:
+        elif bgr_to_rgb:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        if resize is not None:
+            im = cv2.resize(im, dsize = resize)
 
         qimg = QtGui.QImage(im, im.shape[1], im.shape[0], im.strides[0], QtGui.QImage.Format_RGB888)
 
