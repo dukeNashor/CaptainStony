@@ -180,18 +180,18 @@ class MultiLayerEncoder(nn.Module):
 class FuncLoss(nn.Module):
     def __init__(self, device = 'cuda'):
         super(FuncLoss, self).__init__()
-        self.regressor_mat = torch.from_numpy(MetroParams.regressor_matrix).to_device(device)
+        self.regressor_mat = torch.from_numpy(MetroParams.regressor_matrix).to(device)
     
     # intput & target should be matrix of (m + n) * 3, where m num of joints, n num of vertices
-    def CalculateLoss(input, target):
+    def forward(self, input, target):
 
-        assert (input.size()[0] == NUM_JOINTS + NUM_VERTICES) and (target.size()[0] == NUM_JOINTS + NUM_VERTICES),\
-            "FuncLoss::CalculateLoss: Dimensions does not match!"
+        #assert (input.size()[0] == NUM_JOINTS + NUM_VERTICES) and (target.size()[0] == NUM_JOINTS + NUM_VERTICES),\
+        #    "FuncLoss::CalculateLoss: Dimensions does not match!"
 
         lv_plus_lj = torch.sum(torch.abs(input - target))
-        l_reg_j = torch.sum(torch.abs(input.matmul(self.regressor_mat) - target[:NUM_JOINTS, :]))
+        #l_reg_j = torch.sum(torch.abs(input.matmul(self.regressor_mat) - target[:NUM_JOINTS, :]))
 
-        return lv_plus_lj + l_reg_j
+        return lv_plus_lj #+ l_reg_j
 
 
 if __name__ == "__main__":

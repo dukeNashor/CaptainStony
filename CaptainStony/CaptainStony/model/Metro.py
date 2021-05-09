@@ -8,7 +8,7 @@ os.environ['TORCH_HOME'] = 'Cache'
 
 from model.ImageFeatureExtraction import CNN
 from model.MeshPositionalEncoding import MeshPositionalEncoding
-from model.MultiLayerTransformer import MultiLayerEncoder
+from model.MultiLayerTransformer import MultiLayerEncoder, FuncLoss
 
 class Metro(nn.Module):
     def __init__(self, batch_size, device = 'cpu'):
@@ -55,5 +55,10 @@ if __name__ == "__main__":
 
     out_feature = metro.forward(images.to(device))
 
+    funcloss = FuncLoss(device)
+
+    loss = funcloss(out_feature, metro.pe.positional_encoding_mat)
+
+    loss.backward()
 
     pass
