@@ -50,14 +50,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.camera_widget = Ui_CameraWidget(self.camera, self.frustum, self.draw)
         self.btn_camera.clicked.connect(lambda: self._show_camera_widget())
 
-        for key, shape in self._shapes():
-            shape.valueChanged[int].connect(lambda val, k=key: self._update_shape(k, val))
-
-        for key, exp in self._expressions():
-            exp.valueChanged[int].connect(lambda val, k=key: self._update_exp(k, val))
-
-        for key, pose in self._poses():
-            pose.valueChanged[int].connect(lambda val, k=key: self._update_pose(k, val))
+        self.toggle_active_pose_panel(active = True)
 
         self.pos_0.valueChanged[float].connect(lambda val: self._update_position(0, val))
         self.pos_1.valueChanged[float].connect(lambda val: self._update_position(1, val))
@@ -373,16 +366,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.draw()
 
     @staticmethod
-    def _convert_scrollbar_value(val):
+    def _convert_scrollbar_value(id, val):
         val = (val - 50) / 50.0 * np.pi
 
-        if id == 0:
-            val += np.pi
+        #if id == 0:
+        #    val += np.pi
 
         return val
 
     def _update_pose(self, id, val):
-        val = self._convert_scrollbar_value(val)
+        val = self._convert_scrollbar_value(id, val)
 
         if self.model_type == 'flame' and id>=5*3:
             return
@@ -402,6 +395,28 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.draw()
 
     ################## Pose retrieval task ##################
+    def toggle_active_pose_panel(self, active = True):
+
+        if active:
+            for key, shape in self._shapes():
+                shape.valueChanged[int].connect(lambda val, k=key: self._update_shape(k, val))
+
+            for key, exp in self._expressions():
+                exp.valueChanged[int].connect(lambda val, k=key: self._update_exp(k, val))
+
+            for key, pose in self._poses():
+                pose.valueChanged[int].connect(lambda val, k=key: self._update_pose(k, val))
+        else:
+            for key, shape in self._shapes():
+                shape.valueChanged[int].disconnect()
+
+            for key, exp in self._expressions():
+                exp.valueChanged[int].disconnect()
+
+            for key, pose in self._poses():
+                pose.valueChanged[int].disconnect()
+
+
     def initialize_pose_retrieval_widgets(self):
 
         self.canvas_query.wheelEvent = self._zoom
@@ -409,53 +424,172 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.canvas_query.mouseMoveEvent = self._move
         self.canvas_query.mouseReleaseEvent = self._mouse_end
 
+        # main parts
         self.btn_query.clicked.connect(lambda _ : self._query_current_pose())
+        self.check_load_pose.stateChanged.connect(lambda _: self._toggle_auto_load())
+        self.btn_load.clicked.connect(lambda _ : self._load_selected_pose())
+        self.data_list.currentItemChanged.connect(lambda _: self._update_selected_data_view())
         self.result_list.currentItemChanged.connect(lambda _: self._update_selected_view())
+        self._toggle_auto_load()
 
-        self.large_memory_mode = True
+        # radio buttons of metrics
+        self.radio_l1.clicked.connect(lambda _: self._set_distance_type())
+        self.radio_l2.clicked.connect(lambda _: self._set_distance_type())
+        self.radio_canberra.clicked.connect(lambda _: self._set_distance_type())
+        self.radio_chebyshev.clicked.connect(lambda _: self._set_distance_type())
+        self.radio_cosine.clicked.connect(lambda _: self._set_distance_type())
+
+        # radio buttons of masks
+        self.radio_use_all.clicked.connect(lambda _: self._set_mask_type())
+        self.radio_ignore_far.clicked.connect(lambda _: self._set_mask_type())
+        self.radio_use_trunk.clicked.connect(lambda _: self._set_mask_type())
+
+
+
+        self.large_memory_mode = False
         self.pose_retriever = PoseRetriever(load_image_into_memory = self.large_memory_mode)
-
-
+        data_path = os.environ["SMPL_VIEWER_DATA_DIR"]
+        self.pose_retriever.Load3DPWProcessedData(data_path)
+        self._update_data_list()
+        
     def _get_pose_parameters(self):
-        return [ self._convert_scrollbar_value(wgt.value()) for idx, wgt in list(self._poses()) ]
+        #return [ self._convert_scrollbar_value(idx, wgt.value()) for idx, wgt in list(self._poses()) ]
+        return [ self.model.pose.r[i] for i in range(len(self.model.pose))]
+
+
+    def _load_selected_pose(self):
+        print("Loading selected pose")
+        if self.data_list.currentItem() is None:
+            return
+
+        image_path = self.data_list.currentItem().text()
+        pose = self.pose_retriever.GetPose(image_path)
+        for i in range(0, len(pose)):
+            self.model.pose[i] = pose[i]
+
+        self._update_pose_panel()
+        self.draw()
+
+
+    def _update_pose_panel(self):
+        self.toggle_active_pose_panel(active = False)
+        slider_values = [ round(self.model.pose.r[i] / np.pi * 50 + 50) for i in range(72)]
+
+        for key, pose in self._poses():
+            if key < 3:
+                continue
+            pose.setValue(slider_values[key])
+
+        self.toggle_active_pose_panel(active = True)
 
     def _update_pose_text_edit(self):
         p = self._get_pose_parameters()
         text_p = "\t".join([ "{:.4f}".format(d) for d in p ])
         self.pose_text_edit.setText(text_p)
+
      
     def _query_current_pose(self):
         print("Query start")
         pose_param = self._get_pose_parameters()
         query_results = self.pose_retriever.Query(pose = pose_param)
-        query_results = [{"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00009.jpg"},
-                         {"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00173.jpg"},
-                         {"image_path": "H:/dev/ROMP/demo/images_results/demo-images/image_00225.jpg"}
-                         ]
         self._update_result_list(query_results)
         self._update_selected_view()
 
 
+    def _update_data_list(self):
+        data_list = self.pose_retriever.GetDataList()
+
+        for d in data_list:
+            li = QtWidgets.QListWidgetItem(parent = self.data_list)
+            li.setText(d)
+            self.data_list.addItem(li)
+        
+        ## set first as selected, if at least one exists
+        #if self.data_list.count() > 0:
+        #    self.data_list.setCurrentRow(0)
+
     def _update_result_list(self, query_results):
         print("Updating result list")
+        self.result_list.clear()
         for qr in query_results:
             li = QtWidgets.QListWidgetItem(parent = self.result_list)
-            li.setText(qr["image_path"])
+            li.setText(qr[0])
             self.result_list.addItem(li)
         
         # set first as selected, if at least one exists
         if self.result_list.count() > 0:
             self.result_list.setCurrentRow(0)
         
+    def _update_selected_data_view(self):
+        print("Updating data view")
+        if self.data_list.currentItem() is None:
+            return
+
+        key = self.data_list.currentItem().text()
+        #self.pose_retriever.image_dict[image_path] = image_path
+        selected_image = self.pose_retriever.GetImage(key)
+        self.selected_data_view.setPixmap(
+            self._to_pixmap(
+                #self._get_transformed_display_image(selected_image),
+                selected_image,
+                bgr_to_rgb = False,
+                resize = (800, 400)))
+
     def _update_selected_view(self):
         print("Updating selected view")
-        if self.result_list.currentItem() is not None:
-            print("text:", self.result_list.currentItem().text())
-            image_path = self.result_list.currentItem().text()
-            self.pose_retriever.image_dict[image_path] = image_path
-            selected_image = self.pose_retriever.GetImage(image_path)
-            self.selected_view.setPixmap(self._to_pixmap(selected_image, bgr_to_rgb = False, resize = (400, 200)))
-            
+        if self.result_list.currentItem() is None:
+            return
+
+        key = self.result_list.currentItem().text()
+        #self.pose_retriever.image_dict[image_path] = image_path
+        selected_image = self.pose_retriever.GetImage(key)
+        self.selected_view.setPixmap(
+            self._to_pixmap(
+                #self._get_transformed_display_image(selected_image),
+                selected_image,
+                bgr_to_rgb = False,
+                resize = (800, 400)))
+        
+
+    def _get_transformed_display_image(self, image):
+        # split into two horizontally, then vstack;
+        splitted = np.hsplit(image, 2)
+        return np.vstack((splitted[0], splitted[1]))
+        
+
+    def _toggle_auto_load(self):
+        if self.check_load_pose.isChecked():
+            self.data_list.currentItemChanged.connect(lambda _: self._load_selected_pose())
+        else:
+            self.data_list.currentItemChanged.disconnect()
+            self.data_list.currentItemChanged.connect(lambda _: self._update_selected_data_view())
+
+
+    def _set_distance_type(self):
+        if self.radio_l1.isChecked():
+            distance_type = DISTANCE_L1_NORM
+        elif self.radio_l2.isChecked():
+            distance_type = DISTANCE_L2_NORM
+        elif self.radio_canberra.isChecked():
+            distance_type = DISTANCE_CANBERRA
+        elif self.radio_chebyshev.isChecked():
+            distance_type = DISTANCE_CHEBYSHEV
+        elif self.radio_cosine.isChecked():
+            distance_type = DISTANCE_COSINE
+
+        self.pose_retriever.SetDistanceType(distance_type)
+        logging.info("distance type set to {}".format(distance_type))
+
+    def _set_mask_type(self):
+        if self.radio_use_all.isChecked():
+            mask_type = MASK_USE_ALL
+        elif self.radio_ignore_far.isChecked():
+            mask_type = MASK_IGNORE_FAR_END
+        elif self.radio_use_trunk.isChecked():
+            mask_type = MASK_USE_TRUNK_ONLY
+
+        self.pose_retriever.SetMaskType(mask_type)
+        logging.info("mask type set to {}".format(mask_type))
 
 
     ################## ##################

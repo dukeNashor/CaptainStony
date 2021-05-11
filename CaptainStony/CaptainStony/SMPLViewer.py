@@ -43,6 +43,14 @@ if __name__ == '__main__':
 
     logging.info("working dir: {}".format(os.getcwd()))
 
+    if len(sys.argv) > 1:
+        data_path = sys.argv[1]
+    else:
+        data_path = "H:/dev/ROMP/demo/images_results"
+        
+    logging.info("data dir: {}".format(data_path))
+    os.environ["SMPL_VIEWER_DATA_DIR"] = data_path
+
     app = QtWidgets.QApplication(sys.argv)
     form = Ui_MainWindow()
     form.show()
@@ -50,7 +58,7 @@ if __name__ == '__main__':
     sys.exit(app.exec_())
 
 
-    seq_name = 'courtyard_basketball_00'
+    seq_name = 'courtyard_arguing_00'
     datasetDir = './data/3DPW'
     file = os.path.join(datasetDir, 'sequenceFiles', "train", seq_name+'.pkl')
     
