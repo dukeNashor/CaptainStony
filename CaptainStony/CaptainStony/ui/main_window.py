@@ -579,6 +579,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
 
         self.pose_retriever.SetDistanceType(distance_type)
         logging.info("distance type set to {}".format(distance_type))
+        self._query_current_pose()
 
     def _set_mask_type(self):
         if self.radio_use_all.isChecked():
@@ -590,6 +591,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
 
         self.pose_retriever.SetMaskType(mask_type)
         logging.info("mask type set to {}".format(mask_type))
+        self._query_current_pose()
 
 
     ################## ##################

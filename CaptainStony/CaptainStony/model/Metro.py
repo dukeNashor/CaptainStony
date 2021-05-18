@@ -17,7 +17,8 @@ class Metro(nn.Module):
         self.device = device
 
         self.cnn = CNN(batch_size = batch_size, device = device)
-        self.pe = MeshPositionalEncoding(batch_size = batch_size, device = device, mesh_path = "./data/SMPL_template_mesh_simplified.obj")
+        #self.pe = MeshPositionalEncoding(batch_size = batch_size, device = device, mesh_path = "./data/SMPL_template_mesh_simplified.obj")
+        self.pe = MeshPositionalEncoding(batch_size = batch_size, device = device, mesh_path = "./data/SMPL_template_simplified_vertices.csv")
 
         reduced_dims = [2048 // 2, 2048 // 4, 2048 // 8, 3]
 

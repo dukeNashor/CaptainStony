@@ -43,7 +43,7 @@ class PoseRetrievalAlgorithm():
 
     @staticmethod
     def DistanceL1Norm(pose_1, pose_2, mask):
-        return np.sum((np.multiply(pose_1, mask) - np.multiply(pose_2, mask)))
+        return np.sum(np.abs(np.multiply(pose_1, mask) - np.multiply(pose_2, mask)))
 
     @staticmethod
     def DistanceL2Norm(pose_1, pose_2, mask):

@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>1cacdf84-c9c6-4de1-b37d-cf28dc619df2</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>SMPLViewer.py</StartupFile>
+    <StartupFile>METROTest.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>../../</WorkingDirectory>
@@ -37,6 +37,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="PoseRetriever.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="process_3dpw.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="SMPLViewer.py" />

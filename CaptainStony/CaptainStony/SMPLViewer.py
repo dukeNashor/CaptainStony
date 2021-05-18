@@ -58,32 +58,3 @@ if __name__ == '__main__':
     sys.exit(app.exec_())
 
 
-    seq_name = 'courtyard_arguing_00'
-    datasetDir = './data/3DPW'
-    file = os.path.join(datasetDir, 'sequenceFiles', "train", seq_name+'.pkl')
-    
-    with open(file,'rb') as f:
-        seq = pkl.load(f, encoding='latin1')
-
-    models = list()
-    for iModel in range(0,len(seq['v_template_clothed'])):
-        if seq['genders'][iModel] == 'm':
-            model = load_model("./data/smpl/models/basicmodel_m_lbs_10_207_0_v1.1.0.pkl")
-        else:
-            model = load_model("./data/smpl/models/basicModel_f_lbs_10_207_0_v1.1.0.pkl")
-
-        model.betas[:10] = seq['betas'][iModel][:10]
-        models.append(model)
-
-    iModel = 0
-    iFrame = 25
-    if seq['campose_valid'][iModel][iFrame]:
-        models[iModel].pose[:] = seq['poses'][iModel][iFrame]
-        models[iModel].trans[:] = seq['trans'][iModel][iFrame]
-        img_path = os.path.join(datasetDir,'imageFiles',seq['sequence']+'/image_{:05d}.jpg'.format(iFrame))
-        im = renderImage(models[iModel],img_path,seq['cam_poses'][iFrame],seq['cam_intrinsics'])
-        cv2.imshow('3DPW Example',im)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    
