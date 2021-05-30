@@ -13,6 +13,8 @@ from .camera_widget import Ui_CameraWidget
 from .util import *
 
 from PoseRetriever import *
+from WebcamWidget import *
+
 
 model_type_list = ['smplx','smpl','flame']
 
@@ -83,6 +85,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self._update_canvas = True
 
         self.initialize_pose_retrieval_widgets()
+
+        self.webcam = WebcamControlWindow()
+        self.groupBox.layout().addWidget(self.webcam, 2)
 
 
     def showEvent(self, event):

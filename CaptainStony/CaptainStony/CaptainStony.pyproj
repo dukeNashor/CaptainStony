@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>1cacdf84-c9c6-4de1-b37d-cf28dc619df2</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>METROTest.py</StartupFile>
+    <StartupFile>SMPLViewer.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>../../</WorkingDirectory>
@@ -24,6 +24,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ui\WebcamWidget.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="MetroParams.py">
       <SubType>Code</SubType>
     </Compile>

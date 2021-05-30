@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Metro(batch_size = BATCH_SIZE, device = device)
-
+    
     verts_selector = VertexSelector()
 
     dir_3dpw = './data/3DPW'
@@ -61,6 +61,11 @@ if __name__ == "__main__":
     dir_checkpoint = "./checkpoints/"
     if not os.path.exists(dir_checkpoint):
         os.makedirs(dir_checkpoint)
+
+    #model.load_state_dict(torch.load(os.path.join(dir_checkpoint, "020000.pth")))
+    print("Model's state_dict:")
+    for param_tensor in model.state_dict():
+        print(param_tensor, "\t", model.state_dict()[param_tensor].size())
 
     image_file_list, verts_file_list = GetFileList("./data/3dpw_processed/image_file_list.txt",
                                                    "./data/3dpw_processed/verts_file_list.txt")

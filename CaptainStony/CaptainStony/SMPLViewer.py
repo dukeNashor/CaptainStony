@@ -13,21 +13,6 @@ from smpl.smpl_webuser.serialization import load_model
 import cv2
 
 
-def renderImage(model,img_path,camPose,camIntrinsics):
-
-    img = cv2.imread(img_path)
-    class cam:
-        pass
-    cam.rt = cv2.Rodrigues(camPose[0:3,0:3])[0].ravel()
-    cam.t = camPose[0:3,3]
-    cam.f = np.array([camIntrinsics[0,0],camIntrinsics[1,1]])
-    cam.c = camIntrinsics[0:2,2]
-    h = int(2*cam.c[1])
-    w = int(2*cam.c[0])
-    im = (render_model.render_model(model, model.f, w, h, cam, img= img)* 255.).astype('uint8')
-    return im
-
-
 import sys
 from PyQt5 import QtWidgets
 from ui.main_window import Ui_MainWindow
