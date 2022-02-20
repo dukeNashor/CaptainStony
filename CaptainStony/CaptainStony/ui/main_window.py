@@ -32,14 +32,9 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
         self.joints2d = ProjectPoints(rt=np.zeros(3), t=np.zeros(3))
         self.frustum = {'near': 0.1, 'far': 1000., 'width': 100, 'height': 30}
         self.light = LambertianPointLight(vc=np.array([0.98, 0.98, 0.98]), light_color=np.array([1., 1., 1.]))
-        # self.rn = ColoredRenderer(bgcolor=np.ones(3), frustum=self.frustum, camera=self.camera, vc=self.light,
-                                  # overdraw=False)
         self.rn = ColoredRenderer()
         self.rn.set(glMode='glfw',bgcolor=np.array([151 / 255, 102 / 255, 10 / 255]), frustum=self.frustum, camera=self.camera, vc=self.light,
-                                  overdraw=False)
-        self.rn.overdraw = True
-        self.rn.nsamples = 8
-        self.rn.msaa = True  #Without anti-aliasing optimization often does not work.
+                                  overdraw=True, msaa = True, nsamples = 8, sharedWin = None)
         #self.rn.initGL()
         self.rn.debug = False
 
@@ -60,8 +55,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
 
         #self.radio_f.pressed.connect(lambda: self._init_model('f'))
         #self.radio_m.pressed.connect(lambda: self._init_model('m'))
-
-        #self.model_choose.currentIndexChanged[int].connect(lambda val: self._update_model(val))
 
         self.reset_pose.clicked.connect(self._reset_pose)
         self.reset_shape.clicked.connect(self._reset_shape)
@@ -196,15 +189,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
                 [0.0, 0., -1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0]])
             self.rn.camera.openglMat = flipXRotation #this is from setupcamera in utils
-            self.rn.glMode = 'glfw'
-            self.rn.sharedWin = None
-            self.rn.overdraw = True
-            self.rn.nsamples = 8
-            self.rn.msaa = True  #Without anti-aliasing optimization often does not work.
             self.rn.initGL()           
-            self.rn.debug = False
-
-            # print(self.rn.r)
 
             self.draw()
 
@@ -315,30 +300,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
     def _show_camera_widget(self):
         self.camera_widget.show()
         self.camera_widget.raise_()
-
-    def _update_model(self,id):
-        print(id)
-        self.model = None
-        self.model_type = model_type_list[id]
-
-        self._update_canvas = False
-
-        self.light = LambertianPointLight(vc=np.array([0.98, 0.98, 0.98]), light_color=np.array([1., 1., 1.]))
-
-        self.rn.set(glMode='glfw',bgcolor=np.ones(3), frustum=self.frustum, camera=self.camera, vc=self.light,
-                                  overdraw=False)
-
-        self._init_model()
-        self.model.pose[0] = np.pi
-        self._init_camera(update_camera=True)
-
-        self._reset_shape()
-        #self._reset_expression()
-        self._reset_pose()
-        self._reset_position()
-
-        self._update_canvas = True
-        self.draw()
 
     def _update_shape(self, id, val):
         val = (val - 50) / 50.0 * 5.0
@@ -469,9 +430,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow, Ui_MainWindow_Base):
 
         image_path = self.data_list.currentItem().text()
         pose = self.pose_retriever.GetPose(image_path)
-        for i in range(0, len(pose)):
-            self.model.pose[i] = pose[i]
-
+        self.model.pose[3:] = pose[3:]
         self._update_pose_panel()
         self.draw()
 

@@ -1,7 +1,7 @@
 from .smpl.smpl_webuser.serialization import load_model as load_smpl_model
 from .smpl.smpl_webuser.serialization import load_smplx_model, load_flame_model
 
-base_model_folder = './data/'
+base_model_folder = '../data/'
 
 smpl_male_model_path = base_model_folder + 'smpl/models/basicmodel_m_lbs_10_207_0_v1.1.0.pkl'
 smpl_female_model_path = base_model_folder + 'smpl/models/basicModel_f_lbs_10_207_0_v1.1.0.pkl'

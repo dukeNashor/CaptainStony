@@ -7,7 +7,7 @@
     <StartupFile>SMPLViewer.py</StartupFile>
     <SearchPath>
     </SearchPath>
-    <WorkingDirectory>../../</WorkingDirectory>
+    <WorkingDirectory>../</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>CaptainStony</Name>
     <RootNamespace>CaptainStony</RootNamespace>
@@ -24,6 +24,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ui\util.py" />
     <Compile Include="ui\WebcamWidget.py">
       <SubType>Code</SubType>
     </Compile>
